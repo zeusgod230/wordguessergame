@@ -5,66 +5,69 @@ const inputs = document.querySelector(".inputs"),
   resetBtn = document.querySelector(".reset-btn"),
   typingInput = document.querySelector(".typing-input");
 
-let word,
-  maxGuesses,
-  incorrectLetters = [],
+let word, maxGuesses;
+let incorrectLetters = [];
+let correctLetters = [];
+
+function loadNewWord() {
+  const randomObj = wordList[Math.floor(Math.random() * wordList.length)];
+  word = randomObj.word.toLowerCase();
+  maxGuesses = word.length >= 5 ? 8 : 6;
+
+  incorrectLetters = [];
   correctLetters = [];
 
-function randomWord() {
-  let ranItem = wordList[Math.floor(Math.random() * wordList.length)];
-  word = ranItem.word;
-  maxGuesses = word.length >= 5 ? 8 : 6;
-  correctLetters = [];
-  incorrectLetters = [];
-  hintTag.innerText = ranItem.hint;
-  guessLeft.innerText = maxGuesses;
-  wrongLetter.innerText = incorrectLetters;
+  hintTag.textContent = randomObj.hint;
+  guessLeft.textContent = maxGuesses;
+  wrongLetter.textContent = "";
 
   let html = "";
   for (let i = 0; i < word.length; i++) {
     html += `<input type="text" disabled>`;
-    inputs.innerHTML = html;
   }
+  inputs.innerHTML = html;
 }
-randomWord();
 
-function initGame(e) {
-  let key = e.target.value.toLowerCase();
-  if (
-    key.match(/^[A-Za-z]+$/) &&
-    !incorrectLetters.includes(` ${key}`) &&
-    !correctLetters.includes(key)
-  ) {
-    if (word.includes(key)) {
-      for (let i = 0; i < word.length; i++) {
-        if (word[i] == key) {
-          correctLetters += key;
-          inputs.querySelectorAll("input")[i].value = key;
-        }
+loadNewWord();
+
+function handleInput(e) {
+  const key = e.target.value.toLowerCase();
+  e.target.value = "";
+
+  if (!key.match(/^[a-z]$/)) return;
+
+  if (incorrectLetters.includes(key) || correctLetters.includes(key)) return;
+
+  if (word.includes(key)) {
+    [...word].forEach((char, index) => {
+      if (char === key) {
+        correctLetters.push(key);
+        inputs.querySelectorAll("input")[index].value = key.toUpperCase();
       }
-    } else {
-      maxGuesses--;
-      incorrectLetters.push(` ${key}`);
-    }
-    guessLeft.innerText = maxGuesses;
-    wrongLetter.innerText = incorrectLetters;
+    });
+  } else {
+    incorrectLetters.push(key);
+    wrongLetter.textContent = incorrectLetters.join(", ");
+    maxGuesses--;
   }
-  typingInput.value = "";
+
+  guessLeft.textContent = maxGuesses;
 
   setTimeout(() => {
     if (correctLetters.length === word.length) {
-      alert(`Congrats! You found the word ${word.toUpperCase()}`);
-      return randomWord();
+      alert(`Correct! The word was: ${word.toUpperCase()}`);
+      loadNewWord();
     } else if (maxGuesses < 1) {
-      alert("Game over! You don't have remaining guesses");
-      for (let i = 0; i < word.length; i++) {
-        inputs.querySelectorAll("input")[i].value = word[i];
-      }
+      alert(`Game Over! The word was: ${word.toUpperCase()}`);
+      [...word].forEach((char, index) => {
+        inputs.querySelectorAll("input")[index].value = char.toUpperCase();
+      });
     }
   }, 100);
 }
 
-resetBtn.addEventListener("click", randomWord);
-typingInput.addEventListener("input", initGame);
+resetBtn.addEventListener("click", loadNewWord);
+typingInput.addEventListener("input", handleInput);
+
 inputs.addEventListener("click", () => typingInput.focus());
 document.addEventListener("keydown", () => typingInput.focus());
